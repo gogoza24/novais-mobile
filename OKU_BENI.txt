@@ -1,0 +1,120 @@
+╔══════════════════════════════════════════════════════════╗
+║           NOVAIS MOBILE — Android Native Uygulama          ║
+╚══════════════════════════════════════════════════════════╝
+
+NE OLDUGU
+─────────
+Bu, NOVAIS Windows masaustu uygulamasinin sesli asistan cekirdeginin
+native Android karsiligidir. Python/Tkinter/pyaudio yerine Kotlin +
+Android'in kendi ses API'lerini (AudioRecord/AudioTrack) ve Gemini Live
+API'ye DOGRUDAN WebSocket baglantisini kullanir (resmi Python/JS SDK'lari
+Android'de kullanilamadigi icin protokol ham JSON mesajlariyla uygulandi).
+
+
+ÇOK ÖNEMLİ — DÜRÜST SINIRLAMALAR
+─────────────────────────────────
+1) Bu, Windows surumunun BIREBIR AYNISI DEGIL. Windows surumundeki 83 arac
+   (dosya yonetimi, PHP kodlama, web sitesi tasarimi, mobil uygulama
+   uretimi vb.) bu ilk mobil surumde YOK. Bu araclarin buyuk cogunlugu
+   zaten bir masaustu/dosya sistemi ortamina ozgu, telefonda anlam ifade
+   etmiyor. Bu surum SADECE sesli sohbet yapan bir NOVAIS cekirdegidir.
+
+2) BU KOD GERCEK BIR CIHAZDA/EMULATORDE TEST EDILMEDI. Ben (NOVAIS'i
+   gelistiren yapay zeka) Android derlemesi yapamiyorum ve Google'in
+   sunucularina gercek bir WebSocket baglantisi kuramiyorum — bu proje
+   Google'in resmi API belgelerine (ai.google.dev/api/live) dayanarak
+   dikkatlice yazildi, ama ilk calistirmada kucuk uyumsuzluklar
+   (ozellikle JSON alan adlari veya ses formati ile ilgili) cikabilir.
+   Sorun yasarsan Android Studio'nun Logcat penceresinde "NovaisLive" ve
+   "NovaisAudio" etiketli loglara bak, hata mesajini bana ilet.
+
+3) API anahtari cihazda SharedPreferences'ta DUZ METIN olarak saklanir —
+   bu basit ama guvenli olmayan bir yontemdir (Windows surumundeki
+   config/api_keys.json ile ayni seviyede risk). Uretim/dagitim icin
+   Android Keystore ile sifreleme eklenmesi onerilir.
+
+
+KURULUM
+───────
+
+── SEÇENEK A: BİLGİSAYARIN YOKSA — SADECE TELEFONLA (GitHub Codespaces) ──
+
+Bu proje artik bir GitHub Actions is akisi (.github/workflows/build-apk.yml)
+iceriyor — kodu GitHub'a yukledigin an APK otomatik olarak GITHUB'IN KENDI
+BULUT SUNUCUSUNDA derlenir, senin hicbir sey kurmana gerek kalmaz.
+
+1) Telefon tarayicindan github.com'a git, ucretsiz bir hesap ac (yoksa).
+2) Sag ustteki "+" > "New repository" ile bos, yeni bir depo olustur
+   (ad onemli degil, ör. "novais-mobile"). "Create repository" de.
+3) Depo sayfasinda yesil "Code" butonuna bas > "Codespaces" sekmesine gec >
+   "Create codespace on main" de. (Bu, tarayicida CALISAN, ucretsiz bir
+   VS Code + terminal acar — kisisel hesaplarda ayda 60 saate kadar
+   ucretsizdir, bu is icin fazlasiyla yeterli.)
+4) Codespace acilinca sol taraftaki dosya listesinde bos alana sag tikla >
+   "Upload..." se ve bana indirdigin NOVAIS_Mobile.zip dosyasini sec.
+5) Ust menuden "Terminal > New Terminal" ac, su komutlari SIRAYLA yaz ve
+   Enter'a bas:
+
+   unzip NOVAIS_Mobile.zip
+   shopt -s dotglob
+   mv novais_mobile/* .
+   shopt -u dotglob
+   rmdir novais_mobile
+   rm NOVAIS_Mobile.zip
+   git add -A
+   git commit -m "NOVAIS Mobile ilk yukleme"
+   git push
+
+6) Depo sayfasina don, ustteki "Actions" sekmesine tikla. "NOVAIS Mobile APK
+   Derle" adinda bir calisma gorecek, sarı/donen simge (calisiyor) yesile
+   (bitti) donene kadar bekle — genelde 3-6 dakika surer.
+7) Calisma bitince uzerine tikla, en altta "Artifacts" bolumunde
+   "NOVAIS-Mobile-APK" yazan bir indirme linki cikacak — ona bas, bir zip
+   inecek.
+8) O zip'i telefonunun Dosyalar/Files uygulamasiyla ac (cikart/extract),
+   icinden cikan "app-debug.apk" dosyasina dokun, "Yukle/Install" de
+   (once "bilinmeyen kaynaklardan yukleme" iznini acman istenebilir).
+
+Bu kadar — hicbir asamada bilgisayara ihtiyacin olmadi.
+
+
+── SEÇENEK B: BİLGİSAYARIN VARSA (Android Studio) ──
+
+1) Android Studio'yu kur (https://developer.android.com/studio) — JDK,
+   Gradle ve Android SDK'yi otomatik getirir.
+2) Bu klasoru ("NOVAIS Mobile") Android Studio'da ac (File > Open).
+3) Gradle senkronizasyonu tamamlanana kadar bekle (ilk seferde biraz
+   surebilir, internet baglantisi gerekir).
+4) Bir Android cihaz baglayip (USB hata ayiklama acik) veya bir emulator
+   baslatip "Run" (yesil oynat butonu) tuslayarak calistir. Ya da ustteki
+   menuden Build > Build APK(s) diyerek dogrudan .apk dosyasi al.
+5) Uygulama ilk acildiginda Gemini API anahtarini isteyecek — Google AI
+   Studio'dan (aistudio.google.com) aldigin anahtari yapistir.
+6) Mikrofon izni istegini kabul et.
+
+
+NASIL CALISIYOR (TEKNIK OZET)
+─────────────────────────────
+- GeminiLiveClient.kt: wss://generativelanguage.googleapis.com/ws/
+  google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent
+  adresine OkHttp ile WebSocket baglantisi kurar. Ilk mesaj olarak model,
+  sistem talimati ve ses konfigurasyonu iceren bir "setup" mesaji gonderir.
+  Ses PCM verisi Base64 kodlanarak "realtimeInput.audio" alaninda gonderilir
+  (JSON metin protokolu oldugu icin ham byte gonderilemez).
+- AudioStreamer.kt: Mikrofonu 16kHz/16-bit/mono PCM formatinda kaydeder
+  (Gemini'nin bekledigi format), gelen sesi 24kHz/16-bit/mono PCM olarak
+  kesintisiz calar (tek kalici thread ile — Windows surumundeki "kesik
+  kesik ses" duzeltmesiyle ayni mantik).
+- MainActivity.kt: Izin/API anahtari akisini yonetir, GeminiLiveClient ve
+  AudioStreamer'i birbirine baglar, UI'yi gunceller.
+
+
+GELECEKTE EKLENEBILECEKLER
+──────────────────────────
+- Mobil icin anlamli araclar (hatirlatici/alarm, hava durumu, takvim,
+  web arama) — Windows'daki tool_defs.py'ye benzer bir yapiyla.
+- API anahtari icin Android Keystore sifrelemesi.
+- Arka planda calisma (Foreground Service) — su an sadece uygulama
+  acikken calisir.
+- Windows surumundeki "Derin Uzay / Nova" orb animasyonunun tam
+  Android karsiligi (su an basit bir statik gradyan daire).
