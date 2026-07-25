@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NOVAIS</string>
+    <string name="status_connecting">Bağlanıyor…</string>
+    <string name="status_listening">Dinliyorum</string>
+    <string name="status_speaking">Konuşuyor</string>
+    <string name="status_error">Bağlantı hatası</string>
+    <string name="mic_permission_needed">NOVAIS ile konuşabilmek için mikrofon iznine ihtiyaç var.</string>
+</resources>
