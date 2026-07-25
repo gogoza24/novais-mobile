@@ -74,12 +74,32 @@ class GeminiLiveClient(
             }
 
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "WebSocket hatası: ${t.message}", t)
-                listener.onError("Bağlantı hatası: ${t.message}")
+                val bodyText = try { response?.body?.string() } catch (e: Exception) { null }
+                val httpCode = response?.code
+                Log.e(TAG, "WebSocket hatası: ${t.message} | HTTP: $httpCode | body: $bodyText", t)
+                val detail = buildString {
+                    append(t.message ?: t.javaClass.simpleName)
+                    if (httpCode != null) append(" (HTTP $httpCode)")
+                    if (!bodyText.isNullOrBlank()) append(" — $bodyText")
+                }
+                listener.onError("Bağlantı hatası: $detail")
+            }
+
+            override fun onClosing(ws: WebSocket, code: Int, reason: String) {
+                Log.w(TAG, "WebSocket kapanıyor: kod=$code neden=$reason")
             }
 
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-                Log.i(TAG, "WebSocket kapandı: $code $reason")
+                Log.i(TAG, "WebSocket kapandı: kod=$code neden=$reason")
+                // Sunucu setup mesajini reddederse veya bir protokol ihlali
+                // olursa baglanti "hata" olarak degil, belirli bir kod/neden
+                // ile KAPANIR (ör. 1007 gecersiz setup, 1008 politika ihlali,
+                // 1011 sunucu ic hatasi). Bunu HER ZAMAN kullaniciya goster —
+                // Logcat'e yazip sessizce gecme, bir dahaki teshis icin bu
+                // bilgi kritik.
+                if (code != 1000) {
+                    listener.onError("Bağlantı kapandı: kod=$code${if (reason.isNotBlank()) " — $reason" else ""}")
+                }
                 listener.onClosed()
             }
         })
@@ -101,11 +121,12 @@ class GeminiLiveClient(
                     })
                 })
             })
-            // Dusuk gecikme icin dusunme derinligini minimumda tut (NOVAIS
-            // Windows surumundeki thinking_level="minimal" ile ayni mantik).
-            put("thinkingConfig", JSONObject().apply {
-                put("thinkingLevel", "MINIMAL")
-            })
+            // NOT: thinkingConfig kasitli olarak EKLENMEDI — Google'in kendi
+            // gecerli/calisan ornek koduna gore bu model AUDIO modaliteyle
+            // sadece minimal (thinkingConfig'siz) setup mesajiyla dogrulanmis
+            // sekilde baglaniyor. Fazladan alan eklemek setup mesajinin
+            // reddedilmesine (bağlantı hatasına) sebep olabiliyordu.
+            put("outputAudioTranscription", JSONObject())
         }
         val message = JSONObject().put("setup", setup)
         ws.send(message.toString())
