@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#07060F</color>
+    <color name="primary_gold">#FFB454</color>
+    <color name="accent_violet">#A78BFA</color>
+    <color name="text_light">#F0E6FF</color>
+    <color name="listening_green">#4ADE80</color>
+    <color name="speaking_blue">#7C9EFF</color>
+    <color name="error_red">#FB5568</color>
+    <color name="dim_panel">#1C1730</color>
+</resources>
