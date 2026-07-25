@@ -177,7 +177,12 @@ saglayabilirsin.
 
     override fun onError(message: String) {
         runOnUiThread {
+            // Hata metnini kalici olarak transkript alanina da yaz — Toast
+            // birkaç saniyede kaybolur, ekran goruntusu almak icin kalici
+            // bir yer gerekli.
             binding.statusText.text = getString(R.string.status_error)
+            transcriptBuilder.append("\n[HATA] $message\n")
+            binding.transcriptText.text = transcriptBuilder.toString()
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         }
     }
