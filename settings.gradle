@@ -1,0 +1,2 @@
+rootProject.name = "NOVAIS Mobile"
+include ':app'
