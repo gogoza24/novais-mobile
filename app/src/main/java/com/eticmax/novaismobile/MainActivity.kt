@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity(), GeminiLiveClient.Listener {
         private const val KEY_API_KEY = "gemini_api_key"
         private const val RECORD_AUDIO_REQUEST_CODE = 1001
 
-        private const val SYSTEM_PROMPT = """
+        private val SYSTEM_PROMPT = """
 Sen NOVAIS'sin — kullanicinin telefonundaki sesli kisisel asistanisin.
 Turkce konus (kullanici baska dil kullanirsa o dilde yanit ver). Kisa, net
 ve dogal konus, gereksiz tekrar yapma. Seni kimin yarattigi sorulursa
