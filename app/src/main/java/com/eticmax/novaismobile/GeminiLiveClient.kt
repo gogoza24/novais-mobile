@@ -50,7 +50,16 @@ class GeminiLiveClient(
     private var webSocket: WebSocket? = null
     private val client = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.MILLISECONDS)  // WebSocket icin zaman asimi yok
-        .pingInterval(20, TimeUnit.SECONDS)
+        // NOT: pingInterval KASITLI olarak KAPALI (0 = devre disi).
+        // gemini-3.1-flash-live-preview'in WebSocket sunucusu, OkHttp'nin
+        // standart protokol-seviyesi ping/pong cercevelerine duzgun yanit
+        // vermiyor — bu, Google'in kendi gelistirici forumunda dogrulanmis,
+        // bilinen bir sunucu tuhafligi (2.5 Live'da bu sorun yok). OkHttp
+        // kendi ping'ini gonderip pong bekleyince "sent ping but didn't
+        // receive pong" hatasiyla baglantiyi KENDISI kapatiyordu. Sunucuya
+        // guvenip client-side ping'i devre disi birakmak bu sorunu cozer —
+        // gercek veri mesajlari (ses/metin) zaten baglantinin canli
+        // kaldigini gosterir, ayrica bir ping/pong'a ihtiyac yok.
         .build()
 
     fun connect() {
